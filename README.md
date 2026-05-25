@@ -72,8 +72,20 @@ npm run dev:client     # http://localhost:5173 (proxies /api to the server)
 
 ## Status
 
-This is the first pass: modern scaffold + Firebase auth + the full data layer.
-Core workflow (Kanban board, FTM, OS, Lots, Personnel) is being built on top of
-this foundation. Heavier modules from the legacy app — DGD generation,
-financial forecasting, financial tracking dashboards, and Excel/Word exports —
-are ported incrementally; the legacy file remains the reference for those.
+**First pass — done and build-verified:**
+
+- Firebase auth (email/password + anonymous guest) with login/sign-up screen
+- Per-user project selection (create / pick / delete)
+- Express API: project + collection CRUD, token verification, per-user
+  scoping, cascade delete, bootstrap endpoint — with a 24-test suite
+  (`npm test` in `server/`, runs with no credentials via an in-memory shim)
+- Kanban board with drag-and-drop status changes
+- FTM create/edit (tabbed: Général, Lots & Impacts, Devis & Chiffrage, Suivi &
+  Validation) including the quotes/devis sub-editor — object-building ported
+  from the legacy `handleFtmFormSubmit`
+- Lots, Personnel, and OS management (FTM-embedded + standalone)
+
+**Ported incrementally (out of scope for this pass; legacy file is the
+reference):** DGD generation, financial forecasting, financial tracking
+dashboards, and Excel/Word exports. These appear as disabled "à venir"
+placeholders in the UI.

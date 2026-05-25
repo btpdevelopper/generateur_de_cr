@@ -1,46 +1,58 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthContext";
+import { Spinner } from "./components/ui";
+import LoginPage from "./pages/LoginPage";
+import ProjectSelectPage from "./features/projects/ProjectSelectPage";
+import { ProjectDataProvider } from "./state/ProjectDataContext";
+import ProjectArea from "./features/board/ProjectArea";
 
-// NOTE: This is the scaffold shell. The frontend agent replaces this with
-// the login screen + project selection + Kanban board and feature routes.
+const LAST_PROJECT_KEY = "sf:lastProjectId";
+
 export default function App() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
+  const [projectId, setProjectId] = useState<string | null>(() =>
+    localStorage.getItem(LAST_PROJECT_KEY),
+  );
+
+  // Persist the selected project so it auto-loads on return.
+  useEffect(() => {
+    if (projectId) localStorage.setItem(LAST_PROJECT_KEY, projectId);
+  }, [projectId]);
+
+  // Clear the in-memory selection when the user signs out so the next user
+  // doesn't inherit it (the localStorage value is keyed by nothing, so we also
+  // re-read it on a fresh login below).
+  useEffect(() => {
+    if (!user) setProjectId(null);
+  }, [user]);
+
+  // When a user logs in, restore their last project id (if any).
+  useEffect(() => {
+    if (user && !projectId) {
+      const stored = localStorage.getItem(LAST_PROJECT_KEY);
+      if (stored) setProjectId(stored);
+    }
+    // Only react to user changes; projectId is intentionally excluded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center text-gray-500">
-        Chargement…
+      <div className="flex h-screen items-center justify-center">
+        <Spinner label="Chargement…" />
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <div className="flex h-screen items-center justify-center text-gray-700">
-        <div className="rounded-2xl bg-white p-8 shadow-xl">
-          <h1 className="text-2xl font-bold">Suivi Financier</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Écran de connexion à implémenter.
-          </p>
-        </div>
-      </div>
-    );
+  if (!user) return <LoginPage />;
+
+  if (!projectId) {
+    return <ProjectSelectPage onSelect={(id) => setProjectId(id)} />;
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      <header className="flex items-center justify-between border-b bg-white/90 px-6 py-4">
-        <h1 className="text-xl font-bold text-gray-800">Suivi Financier</h1>
-        <button
-          onClick={() => logout()}
-          className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium hover:bg-gray-200"
-        >
-          Déconnexion
-        </button>
-      </header>
-      <main className="flex-grow p-6 text-gray-600">
-        Connecté en tant que {user.isAnonymous ? "invité" : user.email}. Tableau
-        Kanban à implémenter.
-      </main>
-    </div>
+    <ProjectDataProvider key={projectId} projectId={projectId}>
+      <ProjectArea onChangeProject={() => setProjectId(null)} />
+    </ProjectDataProvider>
   );
 }

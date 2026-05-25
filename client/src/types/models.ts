@@ -71,6 +71,15 @@ export interface OrdreService {
   signatureChain: Signer[];
   lots: string[]; // recipient lot numbers / external company names
   linkedQuoteDetails: LinkedQuoteDetail[];
+  // Standalone-OS-only fields (legacy openStandaloneOsModal). Optional so
+  // FTM-embedded OS objects remain valid.
+  label?: string;
+  amount?: number | null;
+  delayDays?: number | null;
+  fileUrl?: string;
+  filePath?: string;
+  fileUrlType?: string;
+  [key: string]: unknown;
 }
 
 /** Per-lot impact text + expected return date on an FTM. */
