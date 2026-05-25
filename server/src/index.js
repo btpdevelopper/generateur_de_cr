@@ -46,9 +46,15 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message || "Server error" });
 });
 
-const port = process.env.PORT || 8080;
-app.listen(port, () => {
-  console.log(`Suivi Financier API listening on :${port}`);
-});
+// Only start listening when run as the entrypoint (node src/index.js), not when
+// imported by the test suite, which drives the app via supertest in-process.
+const isMain =
+  process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+if (isMain) {
+  const port = process.env.PORT || 8080;
+  app.listen(port, () => {
+    console.log(`Suivi Financier API listening on :${port}`);
+  });
+}
 
 export default app;

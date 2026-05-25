@@ -14,11 +14,26 @@ const VALID_COLLECTIONS = new Set([
   "standaloneOs",
 ]);
 
+// Firestore document/collection ids must be non-empty strings and must not
+// contain "/" (which would silently change the path and break per-user
+// scoping). We enforce this for every id derived from request input so the
+// rule holds against both the real Admin SDK and the in-memory shim.
+function assertId(value, label) {
+  if (typeof value !== "string" || value.length === 0 || value.includes("/")) {
+    const err = new Error(`Invalid ${label}`);
+    err.status = 400;
+    throw err;
+  }
+  return value;
+}
+
 export function projectsCol(uid) {
+  assertId(uid, "uid");
   return db.collection("users").doc(uid).collection("projects");
 }
 
 export function projectDoc(uid, projectId) {
+  assertId(projectId, "project id");
   return projectsCol(uid).doc(projectId);
 }
 
@@ -48,12 +63,18 @@ export async function listCollection(uid, projectId, name) {
 }
 
 export async function upsertDoc(uid, projectId, name, id, data) {
-  await subCol(uid, projectId, name)
-    .doc(id)
-    .set({ ...data, id }, { merge: false });
-  return { ...data, id };
+  assertId(id, "document id");
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    const err = new Error("Body must be a JSON object");
+    err.status = 400;
+    throw err;
+  }
+  const doc = { ...data, id };
+  await subCol(uid, projectId, name).doc(id).set(doc, { merge: false });
+  return doc;
 }
 
 export async function deleteDoc(uid, projectId, name, id) {
+  assertId(id, "document id");
   await subCol(uid, projectId, name).doc(id).delete();
 }

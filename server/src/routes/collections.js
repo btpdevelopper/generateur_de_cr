@@ -29,7 +29,10 @@ export function makeCollectionRouter(name) {
       const { projectId, id } = req.params;
       await assertProjectExists(uid, projectId);
 
-      const data = req.body || {};
+      const data = req.body ?? {};
+      if (data === null || typeof data !== "object" || Array.isArray(data)) {
+        return res.status(400).json({ error: "Body must be a JSON object" });
+      }
       if (data.id && data.id !== id) {
         return res.status(400).json({ error: "Body id does not match URL id" });
       }

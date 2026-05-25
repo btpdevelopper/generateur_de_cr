@@ -31,7 +31,8 @@ router.get("/", async (req, res, next) => {
 // POST /api/projects { name } -> create a project
 router.post("/", async (req, res, next) => {
   try {
-    const name = (req.body?.name || "").trim();
+    const rawName = req.body?.name;
+    const name = typeof rawName === "string" ? rawName.trim() : "";
     if (!name) return res.status(400).json({ error: "name is required" });
 
     const ref = projectsCol(req.uid).doc();
@@ -81,10 +82,25 @@ router.put("/:projectId", async (req, res, next) => {
     const { projectId } = req.params;
     await assertProjectExists(uid, projectId);
 
+    const body = req.body ?? {};
     const patch = {};
-    if (typeof req.body?.name === "string") patch.name = req.body.name.trim();
-    if (req.body?.financialConfig)
-      patch.financialConfig = req.body.financialConfig;
+    if (body.name !== undefined) {
+      if (typeof body.name !== "string" || !body.name.trim()) {
+        return res
+          .status(400)
+          .json({ error: "name must be a non-empty string" });
+      }
+      patch.name = body.name.trim();
+    }
+    if (body.financialConfig !== undefined) {
+      const fc = body.financialConfig;
+      if (fc === null || typeof fc !== "object" || Array.isArray(fc)) {
+        return res
+          .status(400)
+          .json({ error: "financialConfig must be an object" });
+      }
+      patch.financialConfig = fc;
+    }
 
     await projectDoc(uid, projectId).set(patch, { merge: true });
     const updated = await projectDoc(uid, projectId).get();
