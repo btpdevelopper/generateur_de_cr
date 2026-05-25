@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// =============================================================================
+// Defense-in-depth security rules for "Suivi Financier".
+//
+// The Express API (this server) verifies the Firebase ID token and owns ALL
+// Firestore access through the Admin SDK, which bypasses these rules. They are
+// kept here as documentation of the data model and as a hard backstop in case
+// a client (or a future direct-SDK path) ever talks to Firestore directly.
+//
+// The model: every document lives under users/{uid}/... and a user may only
+// ever read or write their own subtree.
+//
+// Data layout enforced by the API and mirrored here:
+//   users/{uid}/projects/{projectId}
+//   users/{uid}/projects/{projectId}/{ftms|lots|personnel|standaloneOs}/{docId}
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // A signed-in user owns everything beneath their own users/{uid} node and
+    // nothing else. The recursive wildcard {document=**} covers projects and
+    // all per-project sub-collections in one rule.
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Everything else is denied by default (no fall-through allow rule).
+  }
+}
